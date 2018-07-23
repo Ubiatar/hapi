@@ -2,7 +2,7 @@
   "name": "hapi-bignumber",
   "description": "HTTP Server framework",
   "homepage": "http://hapijs.com",
-  "version": "17.5.2-beta1",
+  "version": "17.5.2-beta.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ubiatar/hapi"
