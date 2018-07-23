@@ -1,5 +1,7 @@
 <img src="https://raw.github.com/hapijs/hapi/master/images/17.png" align="right"/>
 
+### Joi BigNumber version!
+
 ### Web and services application framework
 
 Lead Maintainer: [Eran Hammer](https://github.com/hueniverse)
