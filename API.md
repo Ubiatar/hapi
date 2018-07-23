@@ -1,4 +1,4 @@
-# v17.2.x API Reference
+# v17.5.x API Reference
 
 <!-- toc -->
 
@@ -58,6 +58,7 @@
   - [`server.bind(context)`](#server.bind())
   - [`server.cache(options)`](#server.cache())
   - [`await server.cache.provision(options)`](#server.cache.provision())
+  - [`server.control(server)`](#server.control())
   - [`server.decoder(encoding, decoder)`](#server.decoder())
   - [`server.decorate(type, property, method, [options])`](#server.decorate())
   - [`server.dependency(dependencies, [after])`](#server.dependency())
@@ -298,11 +299,11 @@ Used to disable the automatic initialization of the [`listener`](#server.options
 `false`, indicates that the [`listener`](#server.options.listener) will be started manually outside
 the framework.
 
-Cannot be set to `true` along with a [`port`](#server.options.port) value.
+Cannot be set to `false` along with a [`port`](#server.options.port) value.
 
 #### <a name="server.options.cache" /> `server.options.cache`
 
-Default value: `{ engine: require('catbox-memory' }`.
+Default value: `{ engine: require('catbox-memory') }`.
 
 Sets up server-side caching providers. Every server includes a default cache for storing
 application state. By default, a simple memory-based cache is created which has limited capacity
@@ -610,7 +611,7 @@ console.log(server.auth.api.default.settings.x);    // 5
 
 Access: read only.
 
-Contains the default authentication configuration is a default strategy was set via
+Contains the default authentication configuration if a default strategy was set via
 [`server.auth.default()`](#server.auth.default()).
 
 #### <a name="server.decorations" /> `server.decorations`
@@ -790,7 +791,7 @@ signature `function(request)` where:
 ```js
 server.events.on('response', (request) => {
 
-    console.log(`Response sent for request: ${request.id}`);
+    console.log(`Response sent for request: ${request.info.id}`);
 });
 ```
 
@@ -1424,6 +1425,14 @@ async function example() {
 }
 ```
 
+### <a name="server.control()" /> `server.control(server)`
+
+Links another server to the initialize/start/stop state of the current server by calling the
+controlled server `initialize()`/`start()`/`stop()` methods whenever the current server methods
+are called, where:
+
+- `server` - the **hapi** server object to be controlled.
+
 ### <a name="server.decoder()" /> `server.decoder(encoding, decoder)`
 
 Registers a custom content decoding compressor to extend the built-in support for `'gzip'` and
@@ -1457,7 +1466,7 @@ Extends various framework interfaces with custom methods where:
     - `'server'` - adds methods to the [Server](#server) object.
     - `'toolkit'` - adds methods to the [response toolkit](#response-toolkit).
 
-- `property` - the object decoration key name.
+- `property` - the object decoration key name or symbol.
 
 - `method` - the extension function or other value.
 
@@ -1724,7 +1733,7 @@ Subscribe to an event where:
 
 - `criteria` - the subscription criteria which must be one of:
 
-    - event name string which can be any of the [built-in server events](#server-events) or a
+    - event name string which can be any of the [built-in server events](#server.events) or a
       custom application event registered with [`server.event()`](#server.event()).
 
     - a criteria object with the following optional keys (unless noted otherwise):
@@ -2510,7 +2519,7 @@ server.route({ method: '*', path: '/{p*}', handler });
 Defines a route rules processor for converting route rules object into route configuration where:
 
 - `processor` - a function using the signature `function(rules, info)` where:
-    - `rules` - 
+    - `rules` -
     - `info` - an object with the following properties:
         - `method` - the route method.
         - `path` - the route path.
@@ -2659,14 +2668,14 @@ Registered cookies are automatically parsed when received. Parsing rules depends
 it is not included in [`request.state`](#request.state), regardless of the
 [`state.failAction`](#route.options.state.failAction) setting. When [`state.failAction`](#route.options.state.failAction)
 is set to `'log'` and an invalid cookie value is received, the server will emit a
-`'request-internal'` event. To capture these errors subscribe to the `'request-internal'` events
-and filter on `'error'` and `'state'` tags:
+[`'request'` event](#server.events.request). To capture these errors subscribe to the `'request'`
+event on the `'internal'` channel and filter on `'error'` and `'state'` tags:
 
 ```js
 const Hapi = require('hapi');
 const server = Hapi.server({ port: 80 });
 
-server.events.on('request-internal', (request, event, tags) => {
+server.events.on({ name: 'request', channels: 'internal' }, (request, event, tags) => {
 
     if (tags.error && tags.state) {
         console.error(event);
@@ -2688,7 +2697,7 @@ where:
 - `cookies` - a single object or an array of object where each contains:
     - `name` - the cookie name.
     - `value` - the cookie value.
-    - `options` - cookie configuration to override the server settings. 
+    - `options` - cookie configuration to override the server settings.
 
 Return value: a header string.
 
@@ -3385,6 +3394,18 @@ following options:
 - `noSniff` - boolean controlling the 'X-Content-Type-Options' header. Defaults to `true` setting
   the header to its only and default option, `'nosniff'`.
 
+- `referrer` - controls the ['Referrer-Policy'](https://www.w3.org/TR/referrer-policy/) header, which has the following possible values.
+    - `false` - the 'Referrer-Policy' header will not be sent to clients with responses. This is the default value.
+    - `''` - instructs clients that the Referrer-Policy will be [defined elsewhere](https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string), such as in a meta html tag.
+    - `'no-referrer'` - instructs clients to never include the referrer header when making requests.
+    - `'no-referrer-when-downgrade'` - instructs clients to never include the referrer when navigating from HTTPS to HTTP.
+    - `'same-origin'` - instructs clients to only include the referrer on the current site origin.
+    - `'origin'` - instructs clients to include the referrer but strip off path information so that the value is the current origin only.
+    - `'strict-origin'` - same as `'origin'` but instructs clients to omit the referrer header when going from HTTPS to HTTP.
+    - `'origin-when-cross-origin'` - instructs clients to include the full path in the referrer header for same-origin requests but only the origin components of the URL are included for cross origin requests.
+    - `'strict-origin-when-cross-origin'` - same as `'origin-when-cross-origin'` but the client is instructed to omit the referrer when going from HTTPS to HTTP.
+    - `'unsafe-url'` - instructs the client to always include the referrer with the full URL.
+
 ### <a name="route.options.state" /> `route.options.state`
 
 Default value: `{ parse: true, failAction: 'error' }`.
@@ -3534,10 +3555,9 @@ Validation rules for incoming request payload (request body), where:
 
 - a validation function using the signature `async function(value, options)` where:
 
-    - `value` - the [`request.query`](#request.query) object containing the request query
-      parameters.
+    - `value` - the [`request.payload`](#request.payload) object containing the request payload.
     - `options` - [`options`](#route.options.validate.options).
-    - if a value is returned, the value is used as the new [`request.payload`](#request.query)
+    - if a value is returned, the value is used as the new [`request.payload`](#request.payload)
       value and the original value is stored in [`request.orig.payload`](#request.orig). Otherwise,
       the payload is left unchanged. If an error is thrown, the error is handled according to
       [`failAction`](#route.options.validate.failAction).
@@ -3667,7 +3687,7 @@ the same. The following is the complete list of steps a request can go through:
       be passed back to _**onPreResponse**_ to prevent an infinite loop.
 
 - _**Response transmission**_
-    - may emit `'request-error'` event.
+    - may emit a [`'request'` event](#server.events.request) on the `'error'` channel.
 
 - _**Finalize request**_
     - emits `'response'` event.
@@ -3780,7 +3800,7 @@ The [`authenticate()`](#authentication-scheme) method has access to two addition
     - [`h.authenticated()`](#h.authenticated()) - indicate request authenticated successfully.
     - [`h.unauthenticated()`](#h.unauthenticated()) - indicate request failed to authenticate.
 
-Note that these rules are apply somewhat differently when used in a [pre-handler method](#route.options.pre).
+Note that these rules apply somewhat differently when used in a [pre-handler method](#route.options.pre).
 
 #### Takeover response
 
@@ -3803,7 +3823,7 @@ values:
 - a [lifecycle method](#lifecycle-methods) with the signature `async function(request, h, err)`
   where:
     - `request` - the [request object](#request).
-    - `h` - the [response toolkit](#tookit-interface).
+    - `h` - the [response toolkit](#response-toolkit).
     - `err` - the error object.
 
 #### Errors
@@ -3890,7 +3910,8 @@ const handler = function (request, h) {
 
 When a different error representation is desired, such as an HTML page or a different payload
 format, the `'onPreResponse'` extension point may be used to identify errors and replace them with
-a different response object.
+a different response object, as in this example using [Vision's](https://github.com/hapijs/vision)
+`.view()` [response toolkit](#response-toolkit) property.
 
 ```js
 const Hapi = require('hapi');
@@ -4695,8 +4716,7 @@ wrapped response object, use `responses`.
 Access: read / write (see limitations below).
 
 The response object when set. The object can be modified but must not be assigned another object.
-To replace the response with another from within an [extension point](#server.ext()),
-use `reply(response)` to override with a different response. Contains `null` when no response has
+To replace the response with another from within an [extension point](#server.ext()), return a new response value. Contains `null` when no response has
 been set (e.g. when a request terminates prematurely when the client disconnects).
 
 #### <a name="request.preResponses" /> `request.preResponses`
@@ -4779,8 +4799,9 @@ Returns a [`response`](#response-object) which you can pass into the [reply inte
 
 ### <a name="request.log()" /> `request.log(tags, [data])`
 
-Logs request-specific events. When called, the server emits a `'request'` event which can be used
-by other listeners or [plugins](#plugins). The arguments are:
+Logs request-specific events. When called, the server emits a [`'request'` event](#server.events.request)
+on the `'app'` channel which can be used by other listeners or [plugins](#plugins). The arguments
+are:
 - `tags` - a string or an array of strings (e.g. `['error', 'database', 'read']`) used to identify
   the event. Tags are used instead of log levels and provide a much more expressive mechanism for
   describing and filtering events.
@@ -4788,14 +4809,11 @@ by other listeners or [plugins](#plugins). The arguments are:
   is a function, the function signature is `function()` and it called once to generate (return
   value) the actual data emitted to the listeners.
 
-Any logs generated by the server internally will be emitted only on the `'request-internal'`
-channel and will include the `event.internal` flag set to `true`.
-
 ```js
 const Hapi = require('hapi');
 const server = Hapi.server({ port: 80, routes: { log: { collect: true } } });
 
-server.events.on('request', (request, event, tags) => {
+server.events.on({ name: 'request', channels: 'app' }, (request, event, tags) => {
 
     if (tags.error) {
         console.log(event);
@@ -4807,6 +4825,15 @@ const handler = function (request, h) {
     request.log(['test', 'error'], 'Test event');
     return null;
 };
+
+Note that any logs generated by the server internally will be emitted using the
+[`'request'` event](#server.events.request) on the `'internal'` channel.
+
+```js
+server.events.on({ name: 'request', channels: 'internal' }, (request, event, tags) => {
+
+    console.log(event);
+});
 ```
 
 ### <a name="request.route.auth.access()" /> `request.route.auth.access(request)`

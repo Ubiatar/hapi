@@ -53,22 +53,52 @@ describe('Request.Generator', () => {
     it('decorates request with non function method', async () => {
 
         const server = Hapi.server();
+        const symbol = Symbol('abc');
 
         server.decorate('request', 'x2', 2);
-        server.decorate('request', 'abc', 1);
+        server.decorate('request', symbol, 1);
 
         server.route({
             method: 'GET',
             path: '/',
             handler: (request) => {
 
-                return request.x2 + request.abc;
+                return request.x2 + request[symbol];
             }
         });
 
         const res = await server.inject('/');
         expect(res.statusCode).to.equal(200);
         expect(res.result).to.equal(3);
+    });
+
+    it('does not share decorations between servers via prototypes', async () => {
+
+        const server1 = Hapi.server();
+        const server2 = Hapi.server();
+        const route = {
+            method: 'GET',
+            path: '/',
+            handler: (request) => {
+
+                return Object.keys(Object.getPrototypeOf(request));
+            }
+        };
+        let res;
+
+        server1.decorate('request', 'x1', 1);
+        server2.decorate('request', 'x2', 2);
+
+        server1.route(route);
+        server2.route(route);
+
+        res = await server1.inject('/');
+        expect(res.statusCode).to.equal(200);
+        expect(res.result).to.equal(['x1']);
+
+        res = await server2.inject('/');
+        expect(res.statusCode).to.equal(200);
+        expect(res.result).to.equal(['x2']);
     });
 });
 
