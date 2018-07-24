@@ -2,7 +2,7 @@
   "name": "hapi-bignumber",
   "description": "HTTP Server framework",
   "homepage": "http://hapijs.com",
-  "version": "17.5.2-beta.2",
+  "version": "17.5.2-beta.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ubiatar/hapi"
@@ -27,7 +27,7 @@
     "catbox-memory": "3.x.x",
     "heavy": "6.x.x",
     "hoek": "5.x.x",
-    "joi-bignumber": "^13.4.0-beta1",
+    "joi-bignumber": "^13.4.0-beta.3",
     "mimos": "4.x.x",
     "podium": "3.x.x",
     "shot": "4.x.x",
